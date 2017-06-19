@@ -1,4 +1,7 @@
-const User = require('../models/user.model');
+const User 	  	 = require('../models/user.model');
+const jwt  	  	 = require('jsonwebtoken');
+const config  	 = require('../config/db');
+const middleware = require('../middleware/auth.middleware');
 
 module.exports = (router) => {
 
@@ -8,10 +11,10 @@ module.exports = (router) => {
 		let password = req.body.password || '';
 
 		if (email !== '') {
-			req.checkBody('username', 'username is required').notEmpty();
-			req.checkBody('email', 'email is required').notEmpty();
-			req.checkBody('email', 'format email wrong').isEmail();
-			req.checkBody('password', 'password is required').notEmpty();
+			req.checkBody('username', 'Username is required').notEmpty();
+			req.checkBody('email', 'Email is required').notEmpty();
+			req.checkBody('email', 'Format email wrong').isEmail();
+			req.checkBody('password', 'Password is required').notEmpty();
 			let errors = req.validationErrors();
 			if(!errors) {
 				let user = new User({
@@ -72,6 +75,54 @@ module.exports = (router) => {
 				}
 			});
 		}
+	});
+
+	router.post('/login', (req, res) => {
+		let username = req.body.username.toLowerCase() || '';
+		let password = req.body.password || '';
+
+		req.checkBody('username', 'Username is required').notEmpty();
+		req.checkBody('password', 'Password is required').notEmpty();
+		let errors = req.validationErrors();
+		if(!errors) {
+			User.findOne({ username: username }, (err, user) => {
+				if (err) {
+					res.json({ status: false, message: err });
+				} else {
+					if (!user) {
+						res.json({ status: false, message: 'Username not found!' });
+					} else {
+						const validPassword = user.comparePassword(password);
+						if (!validPassword) {
+							res.json({ status: false, message: 'Password invalid!' });
+						} else {
+							const token = jwt.sign(
+								{ userId: user._id }, 
+								config.secret,
+								{ expiresIn: '24h' }
+							);
+							res.json({ status: true, data: { user: username, token: token }, message: 'Login successfully!' });
+						}
+					}
+				}
+			});
+		} else {
+			res.json({status: false, message: 'Username and password is required!'});
+		}
+	});
+
+	router.get('/profile', middleware.handle, (req, res) => {
+		User.findOne({ _id: req.decoded.userId }).select('username email').exec((err, user) => {
+			if (err) {
+				res.json({ status: false, message: err });
+			} else {
+				if (!user) {
+					res.json({ status: false, message: 'User not found!' });
+				} else {
+					res.json({ status: true, data: { user: user } });
+				}
+			}
+		});
 	});
 
 	return router;
