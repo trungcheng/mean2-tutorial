@@ -4,12 +4,16 @@
   "description": "MEAN Stack Application with Angular 2",
   "main": "index.js",
   "scripts": {
-    "start": "nodemon index.js"
+    "start": "nodemon server/index.js"
   },
   "author": "trungcheng",
   "license": "MIT",
   "dependencies": {
+    "bcrypt-nodejs": "0.0.3",
+    "body-parser": "^1.17.2",
+    "cors": "^2.8.3",
     "express": "^4.15.3",
+    "express-validator": "^3.2.0",
     "mongoose": "^4.10.6"
   }
 }
